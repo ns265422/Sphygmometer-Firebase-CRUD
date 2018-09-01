@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>編輯日誌</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <h4 class="container">
+        <br>
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="index.html">健康日誌</a>
+                </div>
+                <div class="collapse navbar-collapse" id="nav">
+                    <ul class="nav navbar-nav">
+                        <li>
+                            <a href="create.html">CREATE</a>
+                        </li>
+                        <li>
+                            <a href="login.html">LOGIN</a>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <article>
+
+            <!-- 顯示 標題 血壓數值 -->
+            <h4 data-bind="title">Login...</h4>
+            <h4 data-bind="SBP">收縮壓</h4>
+            <h4 data-bind="DBP">舒張壓</h4>
+            <h4 data-bind="BP">脈搏</h4>
+
+            <!-- 顯示 By twnbc114@gmail.com | 15 Aug 18 13:24 | 8 views -->
+            <small>
+                By
+                <span data-bind="author"></span> | Updated at
+                <span data-bind="updatedAt-formatted"></span> |
+                <span data-bind="views">0</span> Views
+            </small>
+
+            <hr>
+            <!-- 顯示 日誌內容 -->
+            <div data-bind="content"></div>
+
+            <hr>
+
+            <div class="text-right">
+                <button id="delete" class="btn btn-lg btn-danger">刪除</button>
+                <a href="" id="update" class="btn btn-lg btn-primary">更新</a>
+            </div>
+
+        </article>
+
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/firebasejs/5.3.1/firebase.js"></script>
+        <script type="text/javascript" src="firebase\firebase_beating_heart.js"></script>
+
+        <script src="//cdn.ckeditor.com/4.5.10/standard/ckeditor.js"></script>
+
+        <script>
+
+            //讀取firebase的entry資料夾，該id位置的所有DATA 
+            var entry_id = $_GET('id');
+
+            if (entry_id) {
+                var added_views = false;
+                var Entry = firebase.database().ref('/Entry').child(entry_id);
+
+                Entry.on('value', function(r) {
+                    var entry = r.val();
+
+                    if (entry) {
+                        
+                        //按下更新按鈕之後
+                        entry['updatedAt-formatted'] = datetimeFormat(entry.updatedAt);
+
+                        //即時更新
+                        $('[data-bind]').each(function() {
+                            $(this).html(entry[$(this).data('bind')]);
+                        });
+
+                        // 更新資料
+                        document.title = '標題' + entry.title;
+                        document.SBP = '收縮壓 : ' + entry.SBP;
+                        document.DBP = '舒張壓 : ' + entry.DBP;
+                        document.BP = '脈搏 : ' + entry.BP;
+
+                        // 觀看次數 + 1
+                        if (!added_views) {
+                            added_views = true;
+                            Entry.child('views').transaction(function(views) {
+                                return (views || 0) + 1;
+                            });
+                        }
+
+                    } else { // 找不到內容，自動導到index.html頁面
+                        window.location.href = 'index.html';
+                    }
+                });
+
+                // 按下更新按鈕之後，參考jQuery 屬性操作 - attr() 方法
+                $('#update').attr('href', 'update.html?id=' + entry_id);
+
+                // 按下刪除按鈕之後
+                $('#delete').click(function() {
+                    if (confirm('確定要刪除這筆日誌嗎 ?')) {
+                        Entry.remove(); // 移除firebase上的日誌 Entry.on('value') 
+                    }
+                });
+            } else {
+                alert('這筆日誌不存在');
+                window.location.href = 'index.html';
+            }
+
+            /*************\
+             * Utilities *
+            \*************/
+
+            function $_GET(key) {
+                var queries = window.location.href.split('?').pop().split('&');
+                var params = {};
+                queries.map(function(query) {
+                    var set = query.split('=');
+                    params[set[0]] = set[1];
+                });
+
+                if (key) {
+                    return params[key] || null;
+                } else {
+                    return params;
+                }
+
+            }
+
+            //顯示時間 日 月 年 時 分
+
+            function pad2Digit(num) {
+                return ('0' + num.toString()).slice(-2);
+            }
+
+            function datetimeFormat(timestamp) {
+                var dateObj = new Date(timestamp);
+                var en_month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return dateObj.getDate() + ' ' + en_month[dateObj.getMonth()] + ' ' + pad2Digit(dateObj.getFullYear()) +
+                    ' ' + pad2Digit(dateObj.getHours()) + ':' + pad2Digit(dateObj.getMinutes());
+            }
+        </script>
+
+
+</body>
+
+</html>

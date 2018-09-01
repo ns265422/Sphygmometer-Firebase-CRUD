@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>新增日誌</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <br>
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+
+                    <a class="navbar-brand" href="index.html">健康日誌</a>
+                </div>
+
+                <div class="collapse navbar-collapse" id="nav">
+
+                    <ul class="nav navbar-nav">
+                        <li class="active">
+                            <a href="create.html">CREATE</a>
+                        </li>
+                        <li>
+                            <a href="login.html">LOGIN</a>
+                        </li>
+                    </ul>
+
+                </div>
+            </div>
+        </nav>
+
+        
+        <form id="new_entry">
+
+            <h2>標題</h2>
+            <input type="text" name="title" class="form-control col-md-12" required>
+
+            <br>
+            <h2>收縮壓 SBP</h2>
+            <input type="text" name="SBP" class="form-control col-md-12" required>
+
+
+            <br>
+            <h2>舒張壓 DBP</h2>
+            <input type="text" name="DBP" class="form-control col-md-12" required>
+
+
+            <br>
+            <h2>脈搏 BP</h2>
+            <input type="text" name="BP" class="form-control col-md-12" required>
+
+            <br>
+            <h2>內容</h2>
+            <textarea name="content" id="content"></textarea>
+
+
+            <br>
+
+            <div class="text-right">
+                <button class="btn btn-large btn-primary btn-lg">新增</button>
+            </div>
+        </form>
+
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.3.1/firebase.js"></script>
+    <script src="firebase\firebase_beating_heart.js"></script>
+    <script src="//cdn.ckeditor.com/4.5.10/standard/ckeditor.js"></script>
+
+    <script>
+
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+
+                // init CKEditor Web版文字編輯器
+                CKEDITOR.replace('content');
+
+                //新增資料然後存到Firebase的entry資料夾
+                $('#new_entry').submit(function(e) {
+                    e.preventDefault();
+                    var entry = {};
+                    entry.title = $(this).find('[name="title"]').val();
+                    entry.SBP = $(this).find('[name="SBP"]').val();
+                    entry.DBP = $(this).find('[name="DBP"]').val();
+                    entry.BP = $(this).find('[name="BP"]').val();
+                    entry.content = CKEDITOR.instances['content'].getData();
+                    entry.createdAt = new Date().getTime(); //取得時間
+                    entry.updatedAt = entry.createdAt;
+                    entry.views = 0; //瀏覽次數設定為 0
+                    entry.author = user.email; //作者設定為登入者 mail
+
+                    var Entry = firebase.database().ref('Entry');
+                    
+                    //把資料push到firebase的entry資料夾，並讀取該文章的一組序號key( firebase自動產生 )
+                    Entry.push(entry).then(function(data) {
+                        window.location.href = 'entry.html?id=' + data.getKey()
+                    }).catch(function(error) {
+                        alert(error);
+                        console.error(error);
+                    })
+
+                    return false;
+                });
+
+
+            } else {
+                
+                // 如果沒有登入，先導到login.html頁面
+                alert('請先登入')
+                window.location.href = 'login.html';
+
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>

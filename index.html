@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>健康日誌</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="container  ">
+        <br>
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header "> 
+
+                    <!-- .navbar-toggler 漢堡式選單按鈕 -->
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+
+                    <!-- 健康日誌顯示在nav頭 不隱藏 -->
+                    <a class="navbar-brand" class="navbar-brand" href="index.html">健康日誌</a>
+
+
+                </div>
+                <!-- .collapse.navbar-collapse 用於外層中斷點群組和隱藏導覽列內容 -->
+                <div class="collapse navbar-collapse" id="nav">
+
+                    <ul class="nav navbar-nav ">
+
+                        <li>
+                            <a href="create.html">CREATE</a>
+                        </li>
+                        <li>
+                            <a href="login.html">LOGIN</a>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+
+
+
+        <div id="entries" class="row">
+
+        </div>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <!--這裡要引用舊版的firebase.js才能更新畫面-->
+    <script src="https://www.gstatic.com/firebasejs/3.3.0/firebase.js"></script>
+    <script src="firebase\firebase_beating_heart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+    <script>
+
+        //從Firebase的entry資料夾，讀取每一筆健康日誌的資料
+        var Blog = firebase.database().ref('/Entry').orderByChild('updatedAt'); //orderByChild:以updatedAt(更新時間)這個項目來做排序
+        Blog.on('value', function(r) {
+            $('#entries').html('');
+            var html = '';
+            r.forEach(function(item) {
+                entry = item.val()
+                html = '<div class="col-md-4">' +
+                    // 顯示 firebase 該日誌的 entry id 連結
+                    '<a href="entry.html?id=' + item.getKey() +
+                    '" style="text-decoration:none!important;">' +
+                    '<div class="panel panel-info">' +
+                    '<div class="panel-heading">' +
+                    // 顯示 標題 高血壓年輕化　營養師：4大壞習慣
+                    // 顯示 當日血壓 : 100  60  40
+                    '<h3 class="panel-title">' + excerpt(entry.title, 140) + '<p></p>' +
+                    ' 當日血壓 : ' + excerpt(entry.SBP) + '  ' + excerpt(entry.DBP) + '  ' + excerpt(entry.BP) + '</h3>' +
+                    '</div>' +
+                    '<div class="panel-body">'
+
+                    // 顯示 By twnbc114@gmail.com | 15 Aug 18 13:24 | 8 views
+                    +'<small>By ' + entry.author + ' | ' + datetimeFormat(entry.updatedAt) + ' | ' + entry.views + ' views</small>' 
+                    // 顯示 健康日誌 content 
+                    +'<hr><p>' + excerpt(entry.content, 250) + '</p>' +
+                    
+                    '</div>' +
+                    '</div>' +
+                    '</a>' +
+                    '</div>' + html; 
+            });
+
+            $('#entries').html(html);
+        });
+
+
+        function strip(html) {
+            var tmp = document.createElement("DIV");
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || "";
+        }
+
+        function excerpt(text, length) {
+            text = strip(text);
+            text = $.trim(text); //trim whitespace
+            if (text.length > length) {
+                text = text.substring(0, length - 3) + '...';  //text.substring(start,stop) 方法用於提取字符串中介於兩個指定下標之間的字符。
+            }
+            return text;
+        }
+
+        //顯示時間 日 月 年 時 分
+        function pad2Digit(num) {
+            return ('0' + num.toString()).slice(-2); //toString 數字改成字串， slice提取從位置 -2 開始的所有字符
+        }
+        
+        function datetimeFormat(timestamp) {
+            var dateObj = new Date(timestamp);
+            var en_month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return dateObj.getDate() + ' ' + en_month[dateObj.getMonth()] + ' ' + pad2Digit(dateObj.getFullYear()) + ' ' + pad2Digit(dateObj.getHours()) + ':' + pad2Digit(dateObj.getMinutes()); // 顯示時間 日 月 年 時 分
+        }
+    </script>
+
+
+</body>
+
+</html>
